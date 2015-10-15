@@ -1,11 +1,11 @@
 {
-    "name": "quipo/kafka-php",
+    "name": "efisuby/kafka-php",
     "description": "PHP client library for Apache Kafka 0.7",
     "license": "Apache",
     "authors": [
         {
-            "name": "Lorenzo Alberton",
-            "email": "l.alberton@quipo.it"
+            "name": "Alexander Baranovsky",
+            "email": "pn.spell@gmail.com"
         }
     ],
     "require": {},
