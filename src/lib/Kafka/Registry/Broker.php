@@ -22,7 +22,12 @@
  * @license  http://www.apache.org/licenses/LICENSE-2.0 Apache License, Version 2.0
  * @link     http://sna-projects.com/kafka/
  */
-class Kafka_Registry_Broker
+
+namespace Kafka\Registry;
+
+use Zookeeper;
+
+class Broker
 {
 	const BROKER_PATH = '/brokers/ids/%d';
 
@@ -36,7 +41,7 @@ class Kafka_Registry_Broker
 	/**
 	 * Create a Broker Registry instance backed by the given Zookeeper quorum.
 	 *
-	 * @param Zookeeper a client for contacting the backing Zookeeper quorum
+	 * @param Zookeeper $zookeeper a client for contacting the backing Zookeeper quorum
 	 */
 	public function __construct(Zookeeper $zookeeper) {
 		$this->zookeeper = $zookeeper;
@@ -45,7 +50,7 @@ class Kafka_Registry_Broker
 	/**
 	 * Get the hostname and port of a broker.
 	 *
-	 * @param int the id of the brother to get the address of
+	 * @param int $broker the id of the brother to get the address of
 	 *
 	 * @return string the hostname and port of the broker, separated by a colon: host:port
 	 */

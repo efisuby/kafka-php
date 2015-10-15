@@ -20,7 +20,9 @@
  * @license  http://www.apache.org/licenses/LICENSE-2.0 Apache License, Version 2.0
  * @link     http://sna-projects.com/kafka/
  */
-class Kafka_Producer
+namespace Kafka;
+
+class Producer
 {
 	/**
 	 * @var integer
@@ -28,7 +30,7 @@ class Kafka_Producer
 	protected $request_key;
 
 	/**
-	 * @var Kafka_Socket
+	 * @var Socket
 	 */
 	protected $socket;
 	
@@ -87,12 +89,17 @@ class Kafka_Producer
 
 	/**
 	 * Constructor
-	 * 
-	 * @param integer $host Host 
+	 *
+	 * @param integer $host Host
 	 * @param integer $port Port
+	 * @param int     $compression
+	 * @param int     $recvTimeoutSec
+	 * @param int     $recvTimeoutUsec
+	 * @param int     $sendTimeoutSec
+	 * @param int     $sendTimeoutUsec
 	 */
-	public function __construct($host, $port, $compression = Kafka_Encoder::COMPRESSION_GZIP, $recvTimeoutSec = 0, $recvTimeoutUsec = 750000, $sendTimeoutSec = 0, $sendTimeoutUsec = 100000) {
-		$this->request_key = Kafka_RequestKeys::PRODUCE;
+	public function __construct($host, $port, $compression = Encoder::COMPRESSION_GZIP, $recvTimeoutSec = 0, $recvTimeoutUsec = 750000, $sendTimeoutSec = 0, $sendTimeoutUsec = 100000) {
+		$this->request_key = RequestKeys::PRODUCE;
 		$this->host        = $host;
 		$this->port        = $port;
 		$this->compression = $compression;
@@ -106,11 +113,11 @@ class Kafka_Producer
 	 * Connect to Kafka via a socket
 	 * 
 	 * @return void
-	 * @throws Kafka_Exception
+	 * @throws \Kafka\Exception
 	 */
 	public function connect() {
 		if (null === $this->socket) {
-			$this->socket = new Kafka_Socket($this->host, $this->port, $this->recvTimeoutSec, $this->recvTimeoutUsec, $this->sendTimeoutSec, $this->sendTimeoutUsec);
+			$this->socket = new Socket($this->host, $this->port, $this->recvTimeoutSec, $this->recvTimeoutUsec, $this->sendTimeoutSec, $this->sendTimeoutUsec);
 		}
 		$this->socket->connect();
 	}
@@ -137,7 +144,7 @@ class Kafka_Producer
 	 */
 	public function send(array $messages, $topic, $partition = 0xFFFFFFFF) {
 		$this->connect();
-		return $this->socket->write(Kafka_Encoder::encode_produce_request($topic, $partition, $messages, $this->compression));
+		return $this->socket->write(Encoder::encode_produce_request($topic, $partition, $messages, $this->compression));
 	}
 
 	/**

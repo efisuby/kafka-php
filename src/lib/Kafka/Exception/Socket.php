@@ -19,7 +19,10 @@
  * @license  http://www.apache.org/licenses/LICENSE-2.0 Apache License, Version 2.0
  * @link     http://sna-projects.com/kafka/
  */
-class Kafka_Exception_Socket extends Kafka_Exception
+namespace Kafka\Exception;
+use Kafka\Exception;
+
+class Socket extends Exception
 {
 
 }

@@ -20,7 +20,9 @@
  * @license  http://www.apache.org/licenses/LICENSE-2.0 Apache License, Version 2.0
  * @link     http://sna-projects.com/kafka/
  */
-class Kafka_FetchRequest extends Kafka_Request
+namespace Kafka;
+
+class FetchRequest extends Request
 {
 	/**
 	 * @var integer
@@ -39,7 +41,7 @@ class Kafka_FetchRequest extends Kafka_Request
 	 * @param integer $maxSize   Max buffer size
 	 */
 	public function __construct($topic, $partition = 0, $offset = 0, $maxSize = 1000000) {
-		$this->id        = Kafka_RequestKeys::FETCH;
+		$this->id        = RequestKeys::FETCH;
 		$this->topic     = $topic;
 		$this->partition = $partition;
 		$this->offset    = $offset;
@@ -49,11 +51,11 @@ class Kafka_FetchRequest extends Kafka_Request
 	/**
 	 * Write the request to the output stream
 	 * 
-	 * @param resource $stream Output stream
+	 * @param Socket $socket Output stream
 	 * 
 	 * @return void
 	 */
-	public function writeTo(Kafka_Socket $socket) {
+	public function writeTo(Socket $socket) {
 		$this->writeRequestHeader($socket);
 
 		// OFFSET (long)

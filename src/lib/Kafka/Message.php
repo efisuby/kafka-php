@@ -24,13 +24,15 @@
  * @license  http://www.apache.org/licenses/LICENSE-2.0 Apache License, Version 2.0
  * @link     http://sna-projects.com/kafka/
  */
-class Kafka_Message
+namespace Kafka;
+
+class Message
 {
 	/**
 	 * Wire format (0=without compression attribute, 1=with)
 	 * @var integer
 	 */
-	private $magic = Kafka_Encoder::CURRENT_MAGIC_VALUE;
+	private $magic = Encoder::CURRENT_MAGIC_VALUE;
 
 	/**
 	 * @var string
@@ -45,7 +47,7 @@ class Kafka_Message
 	/**
 	 * @var integer
 	 */
-	private $compression = Kafka_Encoder::COMPRESSION_NONE;
+	private $compression = Encoder::COMPRESSION_NONE;
 	
 	/**
 	 * @var string
@@ -90,7 +92,7 @@ class Kafka_Message
 	 * @return string
 	 */
 	public function encode() {
-		return Kafka_Encoder::encode_message($this->payload);
+		return Encoder::encode_message($this->payload);
 	}
 	
 	/**
@@ -123,10 +125,10 @@ class Kafka_Message
 	/**
 	 * Get the message payload
 	 * 
-	 * @return string|Kafka_MessageSetInternalIterator
+	 * @return string|MessageSetInternalIterator
 	 */
 	public function payload() {
-		return Kafka_Encoder::decompress($this->payload, $this->compression);
+		return Encoder::decompress($this->payload, $this->compression);
 	}
 	
 	/**

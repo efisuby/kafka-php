@@ -22,7 +22,12 @@
  * @license  http://www.apache.org/licenses/LICENSE-2.0 Apache License, Version 2.0
  * @link     http://sna-projects.com/kafka/
  */
-class Kafka_Registry_Topic
+namespace Kafka\Registry;
+
+use Kafka\Exception\ZookeeperConnection;
+use Zookeeper;
+
+class Topic
 {
 	const TOPIC_PATH  = "/brokers/topics/%s";
 	const BROKER_PATH = "/brokers/topics/%s/%d";
@@ -86,7 +91,7 @@ class Kafka_Registry_Topic
 		if (!@$this->zookeeper->exists($topicPath)) {
 			if ($this->zookeeper->getState() != Zookeeper::CONNECTED_STATE) {
 				$msg = 'Cannot connect to Zookeeper to fetch brokers for topic ' . $topic;
-				throw new Kafka_Exception_ZookeeperConnection($msg);
+				throw new ZookeeperConnection($msg);
 			}
 			return array();
 		}

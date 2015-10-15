@@ -20,10 +20,14 @@
  * @license  http://www.apache.org/licenses/LICENSE-2.0 Apache License, Version 2.0
  * @link     http://sna-projects.com/kafka/
  */
-class Kafka_MessageSet implements Iterator
+namespace Kafka;
+
+use Iterator;
+
+class MessageSet implements Iterator
 {
 	/**
-	 * @var Kafka_Socket
+	 * @var Socket
 	 */
 	protected $socket = null;
 
@@ -43,22 +47,22 @@ class Kafka_MessageSet implements Iterator
 	private $valid = false;
 	
 	/**
-	 * @var Kafka_Message
+	 * @var Message
 	 */
 	private $msg;
 
 	/**
-	 * @var Kafka_MessageSetInternalIterator
+	 * @var \Kafka\MessageSetInternalIterator
 	 */
 	private $internalIterator = null;
 	
 	/**
 	 * Constructor
 	 * 
-	 * @param Kafka_Socket $socket        Stream resource
-	 * @param integer      $initialOffset Initial offset
+	 * @param Socket  $socket        Stream resource
+	 * @param integer $initialOffset Initial offset
 	 */
-	public function __construct(Kafka_Socket $socket, $initialOffset = 0) {
+	public function __construct(Socket $socket, $initialOffset = 0) {
 		$this->socket        = $socket;
 		$this->initialOffset = $initialOffset;
 	}
@@ -67,14 +71,14 @@ class Kafka_MessageSet implements Iterator
 	 * Read the size of the next message (4 bytes)
 	 *
 	 * @return integer Size of the response buffer in bytes
-	 * @throws Kafka_Exception when size is <=0 or >= $maxSize
+	 * @throws \Kafka\Exception when size is <=0 or >= $maxSize
 	 */
 	protected function getMessageSize() {
 		$data = $this->socket->read(4, true);
 		$unpack = unpack('N', $data);
 		$size = array_shift($unpack);
 		if ($size <= 0) {
-			throw new Kafka_Exception_OutOfRange($size . ' is not a valid message size');
+			throw new Exception\OutOfRange($size . ' is not a valid message size');
 		}
 		// TODO check if $size is too large
 		return $size;
@@ -84,16 +88,16 @@ class Kafka_MessageSet implements Iterator
 	 * Read the next message 
 	 *
 	 * @return string Message (raw)
-	 * @throws Kafka_Exception when the message cannot be read from the stream buffer
+	 * @throws \Kafka\Exception when the message cannot be read from the stream buffer
 	 */
 	protected function getMessage() {
 		try {
 			$size = $this->getMessageSize();
 			$msg = $this->socket->read($size, true);
-		} catch (Kafka_Exception_Socket_EOF $e) {
+		} catch (Exception\Socket\EOF $e) {
 			$size = isset($size) ? $size : 'enough';
 			$logMsg = 'Cannot read ' . $size . ' bytes, the message is likely bigger than the buffer - original exception: ' . $e->getMessage();
-			throw new Kafka_Exception_OutOfRange($logMsg);
+			throw new Exception\OutOfRange($logMsg);
 		}
 		$this->validByteCount += 4 + $size;
 		return $msg;
@@ -154,7 +158,7 @@ class Kafka_MessageSet implements Iterator
 	/**
 	 * current
 	 * 
-	 * @return Kafka_Message 
+	 * @return Message
 	 */
 	public function current() {
 		if (null !== $this->internalIterator && $this->internalIterator->valid()) {
@@ -181,8 +185,8 @@ class Kafka_MessageSet implements Iterator
 	 */
 	private function preloadNextMessage() {
 		try {
-			$this->msg = new Kafka_Message($this->getMessage());
-			if ($this->msg->compression() != Kafka_Encoder::COMPRESSION_NONE) {
+			$this->msg = new Message($this->getMessage());
+			if ($this->msg->compression() != Encoder::COMPRESSION_NONE) {
 				$this->internalIterator = $this->msg->payload();
 				$this->internalIterator->rewind();
 				$this->msg = null;
@@ -190,7 +194,7 @@ class Kafka_MessageSet implements Iterator
 				$this->internalIterator = null;
 			}
 			$this->valid = TRUE;
-		} catch (Kafka_Exception_OutOfRange $e) {
+		} catch (Exception\OutOfRange $e) {
 			$this->valid = FALSE;
 		}
 	}

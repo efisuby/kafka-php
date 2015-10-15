@@ -20,7 +20,9 @@
  * @license  http://www.apache.org/licenses/LICENSE-2.0 Apache License, Version 2.0
  * @link     http://sna-projects.com/kafka/
  */
-class Kafka_OffsetRequest extends Kafka_Request
+namespace Kafka;
+
+class OffsetRequest extends Request
 {
 	/**
 	 * @var integer
@@ -41,7 +43,7 @@ class Kafka_OffsetRequest extends Kafka_Request
 	 * @param integer $maxNumOffsets Max number of offsets to return
 	 */
 	public function __construct($topic, $partition, $time, $maxNumOffsets) {
-		$this->id            = Kafka_RequestKeys::OFFSETS;
+		$this->id            = RequestKeys::OFFSETS;
 		$this->topic         = $topic;
 		$this->partition     = $partition;
 		$this->time          = $time;
@@ -51,11 +53,11 @@ class Kafka_OffsetRequest extends Kafka_Request
 	/**
 	 * Write the request to the output stream
 	 * 
-	 * @param Kafka_Socket $socket Output stream
+	 * @param Socket $socket Output stream
 	 * 
 	 * @return void
 	 */
-	public function writeTo(Kafka_Socket $socket) {
+	public function writeTo(Socket $socket) {
 		$this->writeRequestHeader($socket);
 		
 		// TIMESTAMP (long)
@@ -103,15 +105,15 @@ class Kafka_OffsetRequest extends Kafka_Request
 	/**
 	 * Parse the response and return the array of offsets
 	 *
-	 * @param Kafka_Socket $socket Socket handle
+	 * @param Socket $socket Socket handle
 	 *
 	 * @return array
 	 */
-	static public function deserializeOffsetArray(Kafka_Socket $socket) {
+	static public function deserializeOffsetArray(Socket $socket) {
 		$unpack = unpack('N', $socket->read(4));
 		$nOffsets = array_shift($unpack);
 		if ($nOffsets < 0) {
-			throw new Kafka_Exception_OutOfRange($nOffsets . ' is not a valid number of offsets');
+			throw new Exception\OutOfRange($nOffsets . ' is not a valid number of offsets');
 		}
 		$offsets = array();
 		for ($i=0; $i < $nOffsets; ++$i) {
@@ -126,6 +128,6 @@ class Kafka_OffsetRequest extends Kafka_Request
 	 * @return string
 	 */
 	public function __toString() {
-		return 'topic:' . $this->topic . ', part:' . $this->partition . ' offset:' . $this->offset . ' maxSize:' . $this->maxSize;
+		return 'topic:' . $this->topic . ', part:' . $this->partition . ' maxOffset:' . $this->maxNumOffsets . ' maxSize:' . $this->maxSize;
 	}
 }

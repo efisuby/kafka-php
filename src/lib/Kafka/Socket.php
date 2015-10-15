@@ -20,7 +20,9 @@
  * @license  http://www.apache.org/licenses/LICENSE-2.0 Apache License, Version 2.0
  * @link     http://sna-projects.com/kafka/
  */
-class Kafka_Socket
+namespace Kafka;
+
+class Socket
 {
 	/**
 	 * Send timeout in seconds.
@@ -103,7 +105,7 @@ class Kafka_Socket
 	 *
 	 * @param resource $stream File handle
 	 *
-	 * @return void
+	 * @return $this
 	 */
 	static public function createFromStream($stream) {
 		$socket = new self('localhost', 0);
@@ -126,18 +128,18 @@ class Kafka_Socket
 	 * Connects the socket
 	 *
 	 * @return void
-	 * @throws Kafka_Exception_Socket_Connection
+	 * @throws Exception\Socket\Connection
 	 */
 	public function connect() {
 		if (is_resource($this->stream)) {
-			return true;
+			return null;
 		}
 
 		if (empty($this->host)) {
-			throw new Kafka_Exception_Socket_Connection('Cannot open null host');
+			throw new Exception\Socket\Connection('Cannot open null host');
 		}
 		if ($this->port <= 0) {
-			throw new Kafka_Exception_Socket_Connection('Cannot open without port');
+			throw new Exception\Socket\Connection('Cannot open without port');
 		}
 
 		$this->stream = @fsockopen(
@@ -151,7 +153,7 @@ class Kafka_Socket
 		// Connect failed?
 		if ($this->stream === FALSE) {
 			$error = 'Could not connect to '.$this->host.':'.$this->port.' ('.$errstr.' ['.$errno.'])';
-			throw new Kafka_Exception_Socket_Connection($error);
+			throw new Exception\Socket\Connection($error);
 		}
 
 		// Set to blocking mode when keeping a persistent connection,
@@ -182,7 +184,7 @@ class Kafka_Socket
 	 * @param boolean $verifyExactLength Throw an exception if the number of read bytes is less than $len
 	 *
 	 * @return string Binary data
-	 * @throws Kafka_Exception_Socket
+	 * @throws Exception\Socket
 	 */
 	public function read($len, $verifyExactLength = false) {
 		$null = null;
@@ -195,18 +197,18 @@ class Kafka_Socket
 				$chunk = fread($this->stream, $remainingBytes);
 				if ($chunk === false) {
 					$this->close();
-					throw new Kafka_Exception_Socket_EOF('Could not read '.$len.' bytes from stream (no data)');
+					throw new Exception\Socket\EOF('Could not read '.$len.' bytes from stream (no data)');
 				}
 				if (strlen($chunk) === 0) {
 					// Zero bytes because of EOF?
 					if (feof($this->stream)) {
 						$this->close();
-						throw new Kafka_Exception_Socket_EOF('Unexpected EOF while reading '.$len.' bytes from stream (no data)');
+						throw new Exception\Socket\EOF('Unexpected EOF while reading '.$len.' bytes from stream (no data)');
 					}
 					// Otherwise wait for bytes
 					$readable = @stream_select($read, $null, $null, $this->recvTimeoutSec, $this->recvTimeoutUsec);
 					if ($readable !== 1) {
-						throw new Kafka_Exception_Socket_Timeout('Timed out reading socket while reading ' . $len . ' bytes with ' . $remainingBytes . ' bytes to go');
+						throw new Exception\Socket\Timeout('Timed out reading socket while reading ' . $len . ' bytes with ' . $remainingBytes . ' bytes to go');
 					}
 					continue; // attempt another read
 				}
@@ -216,7 +218,7 @@ class Kafka_Socket
 			if ($len === $remainingBytes || ($verifyExactLength && $len !== strlen($data))) {
 				// couldn't read anything at all OR reached EOF sooner than expected
 				$this->close();
-				throw new Kafka_Exception_Socket_EOF('Read ' . strlen($data) . ' bytes instead of the requested ' . $len . ' bytes');
+				throw new Exception\Socket\EOF('Read ' . strlen($data) . ' bytes instead of the requested ' . $len . ' bytes');
 			}
 
 			return $data;
@@ -225,11 +227,11 @@ class Kafka_Socket
 			$res = stream_get_meta_data($this->stream);
 			if (!empty($res['timed_out'])) {
 				$this->close();
-				throw new Kafka_Exception_Socket_Timeout('Timed out reading '.$len.' bytes from stream');
+				throw new Exception\Socket\Timeout('Timed out reading '.$len.' bytes from stream');
 			}
 		}
 		$this->close();
-		throw new Kafka_Exception_Socket_EOF('Could not read '.$len.' bytes from stream (not readable)');
+		throw new Exception\Socket\EOF('Could not read '.$len.' bytes from stream (not readable)');
 	}
 
 	/**
@@ -238,7 +240,7 @@ class Kafka_Socket
 	 * @param string $buf The data to write
 	 *
 	 * @return integer
-	 * @throws Kafka_Exception_Socket
+	 * @throws Exception\Socket
 	 */
 	public function write($buf) {
 		$null = null;
@@ -255,7 +257,7 @@ class Kafka_Socket
 				// write remaining buffer bytes to stream
 				$wrote = fwrite($this->stream, substr($buf, $written));
 				if ($wrote === -1 || $wrote === false) {
-					throw new Kafka_Exception_Socket('Could not write ' . strlen($buf) . ' bytes to stream, completed writing only ' . $written . ' bytes');
+					throw new Exception\Socket('Could not write ' . strlen($buf) . ' bytes to stream, completed writing only ' . $written . ' bytes');
 				}
 				$written += $wrote;
 				continue;
@@ -263,10 +265,10 @@ class Kafka_Socket
 			if (false !== $writable) {
 				$res = stream_get_meta_data($this->stream);
 				if (!empty($res['timed_out'])) {
-					throw new Kafka_Exception_Socket_Timeout('Timed out writing ' . strlen($buf) . ' bytes to stream after writing ' . $written . ' bytes');
+					throw new Exception\Socket\Timeout('Timed out writing ' . strlen($buf) . ' bytes to stream after writing ' . $written . ' bytes');
 				}
 			}
-			throw new Kafka_Exception_Socket('Could not write ' . strlen($buf) . ' bytes to stream');
+			throw new Exception\Socket('Could not write ' . strlen($buf) . ' bytes to stream');
 		}
 		return $written;
 	}

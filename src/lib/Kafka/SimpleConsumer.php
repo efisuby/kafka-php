@@ -20,7 +20,11 @@
  * @license  http://www.apache.org/licenses/LICENSE-2.0 Apache License, Version 2.0
  * @link     http://sna-projects.com/kafka/
  */
-class Kafka_SimpleConsumer
+namespace Kafka;
+
+use Kafka\Exception\Socket\EOF;
+
+class SimpleConsumer
 {
 	/**
 	 * Latest offset available
@@ -47,7 +51,7 @@ class Kafka_SimpleConsumer
 	protected $port = 9092;
 
 	/**
-	 * @var Kafka_Socket
+	 * @var Socket
 	 */
 	protected $socket = null;
 
@@ -126,7 +130,7 @@ class Kafka_SimpleConsumer
 	 * @param integer $sendTimeoutSec  Send timeout in seconds
 	 * @param integer $sendTimeoutUsec Send timeout in microseconds
 	 *
-	 * @return
+	 * @return null
 	 */
 	public function setSocketTimeouts($recvTimeoutSec = 0, $recvTimeoutUsec = 250000, $sendTimeoutSec = 0, $sendTimeoutUsec = 100000) {
 		$this->recvTimeoutSec  = (int) $recvTimeoutSec;
@@ -142,7 +146,7 @@ class Kafka_SimpleConsumer
 	 */
 	public function connect() {
 		if (null === $this->socket) {
-			$this->socket = new Kafka_Socket(
+			$this->socket = new Socket(
 				$this->host,
 				$this->port,
 				$this->recvTimeoutSec,
@@ -168,12 +172,12 @@ class Kafka_SimpleConsumer
 	/**
 	 * Send a request and fetch the response
 	 *
-	 * @param Kafka_Request $req Request
+	 * @param Request $req Request
 	 *
-	 * @return Kafka_MessageSet $messages
-	 * @throws Kafka_Exception
+	 * @return MessageSet $messages
+	 * @throws \Kafka\Exception
 	 */
-	public function fetch(Kafka_Request $req) {
+	public function fetch(Request $req) {
 		$this->connect();
 		// send request
 		$req->writeTo($this->socket);
@@ -184,12 +188,12 @@ class Kafka_SimpleConsumer
 		$initialOffset          = 6;
 
 		// validate response
-		Kafka_Response::validateErrorCode($responseCode);
+		Response::validateErrorCode($responseCode);
 		if ($this->lastResponseSize == 2) {
-			throw new Kafka_Exception_EmptyQueue();
+			throw new Exception\EmptyQueue();
 		}
 
-		return new Kafka_MessageSet($this->socket, $initialOffset);
+		return new MessageSet($this->socket, $initialOffset);
 	}
 
 	/**
@@ -204,12 +208,10 @@ class Kafka_SimpleConsumer
 	/**
 	 * Read the request size (4 bytes) if not read yet
 	 *
-	 * @param resource $stream Stream resource
-	 *
 	 * @return integer Size of the response buffer in bytes
-	 * @throws Kafka_Exception_Socket_EOF
-	 * @throws Kafka_Exception_Socket_Timeout
-	 * @throws Kafka_Exception when size is <=0 or >= $maxSize
+	 * @throws \Kafka\Exception\Socket\EOF
+	 * @throws \Kafka\Exception\Socket\Timeout
+	 * @throws \Kafka\Exception when size is <=0 or >= $maxSize
 	 */
 	protected function getResponseSize() {
 		$this->connect();
@@ -217,7 +219,7 @@ class Kafka_SimpleConsumer
 		$unpack = unpack('N', $size);
 		$size = array_shift($unpack);
 		if ($size <= 0) {
-			throw new Kafka_Exception_OutOfRange($size . ' is not a valid response size');
+			throw new Exception\OutOfRange($size . ' is not a valid response size');
 		}
 		return $size;
 	}
@@ -238,34 +240,37 @@ class Kafka_SimpleConsumer
 	 *  Get a list of valid offsets (up to maxSize) before the given time.
 	 *  The result is a list of offsets, in descending order.
 	 *
-	 *  @param time: time in millisecs (-1 from the latest offset available, -2 from the smallest offset available)
+	 * @param $topic
+	 * @param $partition
+	 * @param $time
+	 * @param $maxNumOffsets
 	 *
-	 *  @return an array of offsets
+	 * @return array an array of offsets
+	 * param $time : time in millisecs (-1 from the latest offset available, -2 from the smallest offset available)
+	 *
 	 */
 	public function getOffsetsBefore($topic, $partition, $time, $maxNumOffsets) {
-		$req = new Kafka_OffsetRequest($topic, $partition, $time, $maxNumOffsets);
+		$req = new OffsetRequest($topic, $partition, $time, $maxNumOffsets);
 		try {
 			$this->connect();
 			// send request
 			$req->writeTo($this->socket);
 			//echo "\nRequest sent: ".(string)$req."\n";
-		} catch (Kafka_Socket_Exception_EOF $e) {
+		} catch (EOF $e) {
 			//echo "\nReconnect in get offetset request due to socket error: " . $e->getMessage();
 			// retry once
 			$this->connect();
 			$req->writeTo($this->socket);
 		}
-		$size      = $this->getResponseSize();
+		//$size      = $this->getResponseSize();
 		$errorCode = $this->getResponseCode();
-		Kafka_Response::validateErrorCode($errorCode);
+		Response::validateErrorCode($errorCode);
 
-		return Kafka_OffsetRequest::deserializeOffsetArray($this->socket);
+		return OffsetRequest::deserializeOffsetArray($this->socket);
 	}
 
 	/**
 	 * Close the socket connection if still open
-	 *
-	 * @return vpopmail_del_domain(domain)
 	 */
 	public function __destruct() {
 		$this->close();

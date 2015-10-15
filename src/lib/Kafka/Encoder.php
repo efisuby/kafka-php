@@ -20,7 +20,8 @@
  * @license  http://www.apache.org/licenses/LICENSE-2.0 Apache License, Version 2.0
  * @link     http://sna-projects.com/kafka/
  */
-class Kafka_Encoder
+namespace Kafka;
+class Encoder
 {
 	/**
 	 * 1 byte "magic" identifier to allow format changes
@@ -41,9 +42,9 @@ class Kafka_Encoder
 	 *  - (N - 6) bytes: payload
 	 *
 	 * @param string $msg Message to encode
+	 * @param int    $compression
 	 *
 	 * @return string
-	 * @throws Kafka_Exception
 	 */
 	static public function encode_message($msg, $compression = self::COMPRESSION_NONE) {
 		$compressed = self::compress($msg, $compression);
@@ -59,7 +60,7 @@ class Kafka_Encoder
 	 * @param integer $compression 0=none, 1=gzip, 2=snappy
 	 *
 	 * @return string
-	 * @throws Kafka_Exception
+	 * @throws \Kafka\Exception
 	 */
 	static public function compress($msg, $compression) {
 		switch ($compression) {
@@ -68,9 +69,9 @@ class Kafka_Encoder
 			case self::COMPRESSION_GZIP:
 				return gzencode($msg);
 			case self::COMPRESSION_SNAPPY:
-				throw new Kafka_Exception_NotSupported('SNAPPY compression not yet implemented');
+				throw new Exception\NotSupported('SNAPPY compression not yet implemented');
 			default:
-				throw new Kafka_Exception_NotSupported('Unknown compression flag: ' . $compression);
+				throw new Exception\NotSupported('Unknown compression flag: ' . $compression);
 		}
 	}
 
@@ -81,7 +82,7 @@ class Kafka_Encoder
 	 * @param integer $compression 0=none, 1=gzip, 2=snappy
 	 *
 	 * @return string
-	 * @throws Kafka_Exception
+	 * @throws \Kafka\Exception
 	 */
 	static public function decompress($msg, $compression) {
 		switch ($compression) {
@@ -95,12 +96,12 @@ class Kafka_Encoder
 				$stream = fopen('php://temp', 'w+b');
 				fwrite($stream, gzinflate(substr($msg, 10)));
 				rewind($stream);
-				$socket = Kafka_Socket::createFromStream($stream);
-				return new Kafka_MessageSetInternalIterator($socket, 0, 0);
+				$socket = Socket::createFromStream($stream);
+				return new MessageSetInternalIterator($socket, 0, 0);
 			case self::COMPRESSION_SNAPPY:
-				throw new Kafka_Exception_NotSupported('SNAPPY decompression not yet implemented');
+				throw new Exception\NotSupported('SNAPPY decompression not yet implemented');
 			default:
-				throw new Kafka_Exception_NotSupported('Unknown compression flag: ' . $compression);
+				throw new Exception\NotSupported('Unknown compression flag: ' . $compression);
 		}
 	}
 
@@ -113,7 +114,7 @@ class Kafka_Encoder
 	 * @param integer $compression flag for type of compression
 	 *
 	 * @return string
-	 * @throws Kafka_Exception
+	 * @throws \Kafka\Exception
 	 */
 	static public function encode_produce_request($topic, $partition, array $messages, $compression = self::COMPRESSION_NONE) {
 		// not sure I agree this is the best design for compressed messages
@@ -131,7 +132,7 @@ class Kafka_Encoder
 		}
 
 		// create the request as <REQUEST_SIZE: int> <REQUEST_ID: short> <TOPIC: bytes> <PARTITION: int> <BUFFER_SIZE: int> <BUFFER: bytes>
-		$data = pack('n', Kafka_RequestKeys::PRODUCE) .
+		$data = pack('n', RequestKeys::PRODUCE) .
 			pack('n', strlen($topic)) . $topic .
 			pack('N', $partition) .
 			pack('N', strlen($message_set)) . $message_set;

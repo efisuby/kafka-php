@@ -22,7 +22,11 @@
  * @license  http://www.apache.org/licenses/LICENSE-2.0 Apache License, Version 2.0
  * @link     http://sna-projects.com/kafka/
  */
-class Kafka_Registry_Offset
+namespace Kafka\Registry;
+
+use Zookeeper;
+
+class Offset
 {
 	const OFFSETS_PATH = '/consumers/%s/offsets/%s';
 	const OFFSET_PATH  = '/consumers/%s/offsets/%s/%d-%d';

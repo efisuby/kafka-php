@@ -26,20 +26,22 @@
  * @license  http://www.apache.org/licenses/LICENSE-2.0 Apache License, Version 2.0
  * @link     http://sna-projects.com/kafka/
  */
-class Kafka_ZookeeperConsumer implements Iterator
+namespace Kafka;
+
+class ZookeeperConsumer implements \Iterator
 {
 	/**
-	 * @var Kafka_Registry_Topic
+	 * @var Registry\Topic
 	 */
 	protected $topicRegistry;
 
 	/**
-	 * @var Kafka_Registry_Broker
+	 * @var Registry\Broker
 	 */
 	protected $brokerRegistry;
 
 	/**
-	 * @var Kafka_Registry_Offset
+	 * @var Registry\Offset
 	 */
 	protected $offsetRegistry;
 
@@ -64,7 +66,7 @@ class Kafka_ZookeeperConsumer implements Iterator
 	protected $maxBatchSize = 20000000;
 
 	/**
-	 * @var array
+	 * @var \stdClass[]
 	 */
 	protected $iterators = array();
 
@@ -86,16 +88,16 @@ class Kafka_ZookeeperConsumer implements Iterator
 	/**
 	 * Create a new BatchedConsumer for a topic using the given TopicReigstry and OffsetRegistry.
 	 *
-	 * @param Kafka_Registry_Topic  $topicRegistry  a registry for the discovery of topic partitions
-	 * @param Kafka_Registry_Broker $brokerRegistry a registry for the tracking of brokers
-	 * @param Kafka_Registry_Offset $offsetRegistry a registry for the tracking of the consumer offsets
-	 * @param string                $topic          the topic to consume from
-	 * @param integer               $maxBatchSize   maximum batch size (in bytes)
+	 * @param Registry\Topic  $topicRegistry  a registry for the discovery of topic partitions
+	 * @param Registry\Broker $brokerRegistry a registry for the tracking of brokers
+	 * @param Registry\Offset $offsetRegistry a registry for the tracking of the consumer offsets
+	 * @param string          $topic          the topic to consume from
+	 * @param integer         $maxBatchSize   maximum batch size (in bytes)
 	 */
 	public function __construct(
-		Kafka_Registry_Topic $topicRegistry,
-		Kafka_Registry_Broker $brokerRegistry,
-		Kafka_Registry_Offset $offsetRegistry,
+		Registry\Topic $topicRegistry,
+		Registry\Broker $brokerRegistry,
+		Registry\Offset $offsetRegistry,
 		$topic,
 		$maxBatchSize = 20000000
 	) {
@@ -118,7 +120,7 @@ class Kafka_ZookeeperConsumer implements Iterator
 	/**
 	 * Advance the iterator's pointer
 	 *
-	 * @return void
+	 * @return Message
 	 */
 	public function next() {
 		return $this->iterators[$this->idx]->messages->next();
@@ -152,9 +154,9 @@ class Kafka_ZookeeperConsumer implements Iterator
 			$it = $this->iterators[$this->idx];
 			try {
 				if (null === $it->messages) {
-					$it->consumer = new Kafka_SimpleConsumer($it->host, $it->port, $this->socketTimeout, $this->maxBatchSize);
+					$it->consumer = new SimpleConsumer($it->host, $it->port, $this->socketTimeout, $this->maxBatchSize);
 					$newOffset = $it->offset + $it->uncommittedOffset;
-					$request = new Kafka_FetchRequest($this->topic, $it->partition, $newOffset, $this->maxBatchSize);
+					$request = new FetchRequest($this->topic, $it->partition, $newOffset, $this->maxBatchSize);
 					$it->messages = $it->consumer->fetch($request);
 					$it->messages->rewind();
 				}
@@ -165,7 +167,7 @@ class Kafka_ZookeeperConsumer implements Iterator
 				// we're done with the current broker/partition, count how much we've read so far and update the offsets
 				$this->readBytes += $it->messages->validBytes();
 				$it->uncommittedOffset += $it->messages->validBytes();
-			} catch (Kafka_Exception_EmptyQueue $e) {
+			} catch (Exception\EmptyQueue $e) {
 				// no new data from this broker/partition
 			}
 			// reset the MessageSet iterator and move to the next
@@ -229,13 +231,13 @@ class Kafka_ZookeeperConsumer implements Iterator
 	public function resyncOffsets() {
 		$nReset = 0;
 		foreach ($this->iterators as $it) {
-			$consumer = new Kafka_SimpleConsumer($it->host, $it->port, $this->socketTimeout, $this->maxBatchSize);
+			$consumer = new SimpleConsumer($it->host, $it->port, $this->socketTimeout, $this->maxBatchSize);
 			try {
 				$newOffset = $it->offset + $it->uncommittedOffset;
-				$request = new Kafka_FetchRequest($this->topic, $it->partition, $newOffset, $this->maxBatchSize);
+				$request = new FetchRequest($this->topic, $it->partition, $newOffset, $this->maxBatchSize);
 				$it->messages = $consumer->fetch($request);
-			} catch (Kafka_Exception_OffsetOutOfRange $e) {
-				$offsets = $consumer->getOffsetsBefore($this->topic, $it->partition, Kafka_SimpleConsumer::OFFSET_FIRST, 1);
+			} catch (Exception\OffsetOutOfRange $e) {
+				$offsets = $consumer->getOffsetsBefore($this->topic, $it->partition, SimpleConsumer::OFFSET_FIRST, 1);
 				if (count($offsets) > 0) {
 					$newOffset = $offsets[0];
 					$this->offsetRegistry->commit($this->topic, $it->broker, $it->partition, $newOffset);
@@ -258,7 +260,7 @@ class Kafka_ZookeeperConsumer implements Iterator
 			if (0 == $this->nIterators) {
 				$this->rewind();	// initialise simple consumers
 			}
-		} catch (Kafka_Exception_InvalidTopic $e) {
+		} catch (Exception\InvalidTopic $e) {
 			$logMsg = 'Invalid topic from ZookeeperConsumer::rewind(): Most likely cause is no topic yet as there is no data';
 			error_log($logMsg);
 		}
@@ -268,8 +270,8 @@ class Kafka_ZookeeperConsumer implements Iterator
 			if (null !== $it->messages) {
 				$readBytes += $it->messages->validBytes();
 			}
-			$consumer = new Kafka_SimpleConsumer($it->host, $it->port, $this->socketTimeout, $this->maxBatchSize);
-			$offsets = $consumer->getOffsetsBefore($this->topic, $it->partition, Kafka_SimpleConsumer::OFFSET_LAST, 1);
+			$consumer = new SimpleConsumer($it->host, $it->port, $this->socketTimeout, $this->maxBatchSize);
+			$offsets = $consumer->getOffsetsBefore($this->topic, $it->partition, SimpleConsumer::OFFSET_LAST, 1);
 			if (count($offsets) > 0) {
 				$remaining = $offsets[0] - $readBytes; // remaining bytes for this broker/partition
 				if ($remaining > 0) {
@@ -307,7 +309,7 @@ class Kafka_ZookeeperConsumer implements Iterator
 			}
 		}
 		if (0 == count($this->iterators)) {
-			throw new Kafka_Exception_InvalidTopic('Cannot find topic ' . $this->topic);
+			throw new Exception\InvalidTopic('Cannot find topic ' . $this->topic);
 		}
 		// get a random broker/partition every time
 		$this->shuffle();

@@ -20,7 +20,9 @@
  * @license  http://www.apache.org/licenses/LICENSE-2.0 Apache License, Version 2.0
  * @link     http://sna-projects.com/kafka/
  */
-abstract class Kafka_Request
+namespace Kafka;
+
+abstract class Request
 {
 	/**
 	 * @var integer
@@ -40,11 +42,11 @@ abstract class Kafka_Request
 	/**
 	 * Write the request to the output stream
 	 *
-	 * @param Kafka_Socket $socket Output stream
+	 * @param Socket $socket Output stream
 	 *
 	 * @return void
 	 */
-	abstract public function writeTo(Kafka_Socket $socket);
+	abstract public function writeTo(Socket $socket);
 
 	/**
 	 * Get request size in bytes
@@ -57,11 +59,11 @@ abstract class Kafka_Request
 	 * Write the Request Header
 	 * <req_len> + <req_type> + <topic_len> + <topic> + <partition>
 	 *
-	 * @param Kafka_Socket $socket Socket
+	 * @param Socket $socket Socket
 	 *
 	 * @return void
 	 */
-	protected function writeRequestHeader(Kafka_Socket $socket) {
+	protected function writeRequestHeader(Socket $socket) {
 		// REQUEST_LENGTH (int) + REQUEST_TYPE (short)
 		$socket->write(pack('N', $this->sizeInBytes() + 2));
 		$socket->write(pack('n', $this->id));
@@ -77,7 +79,7 @@ abstract class Kafka_Request
 	 *
 	 * @param integer $big Big int
 	 *
-	 * @return bytes
+	 * @return string byte string
 	 */
 	static public function packLong64bigendian($big) {
 		$left  = 0xffffffff00000000;
@@ -92,7 +94,7 @@ abstract class Kafka_Request
 	/**
 	 * Pack a 64bit integer as big endian long
 	 *
-	 * @param integer $big Big int
+	 * @param integer $bytes Big int
 	 *
 	 * @return integer
 	 */
